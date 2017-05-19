@@ -8,6 +8,7 @@ import numpy as np
 def main():
     """入口，读取R3,L4类似的字符串数据，打印最后与原点的距离"""
     position = np.array((0, 0))
+    positions = [position]
     direction = np.array((0, 1))
 
     items_str = raw_input('input data: ')
@@ -16,9 +17,17 @@ def main():
     for item in items:
         turn, step = parse_item(item)
         direction = rotate(direction, turn)
-        position += direction * step
+        positions += [(position + direction * i) for i in range(1, step+1)]
+        position = position + direction * step
 
     print math.fabs(position[0]) + math.fabs(position[1])
+
+    positions = map(tuple, positions)
+    for idx, pos in enumerate(positions):
+        # 如果之前来过这个地方
+        if positions.index(pos) < idx:
+            print math.fabs(pos[0]) + math.fabs(pos[1])
+            break
 
 
 def parse_item(item):
