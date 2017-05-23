@@ -1,24 +1,37 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import re
+import string
 import collections
 
 
 def main():
     """入口"""
-    sector_id_sum = 0
+    real_rooms = []
 
     for line in open('day4.txt'):
         line = line.strip()
-        line = line.replace('-', '')
-
-        re_match = re.match(r'^([a-z]+)(\d+)\[(\w+)\]$', line)
-        name, sector_id, checksum = re_match.groups()
+        name, sector_id, checksum = parse_info(line)
 
         if is_real_room(name, checksum):
-            sector_id_sum += int(sector_id)
+            real_rooms.append({
+                'sector_id': sector_id,
+                'name': name,
+                'decrypted_name': decrypt_name(name, sector_id),
+                'checksum': checksum,
+            })
 
-    print sector_id_sum
+    print sum([r['sector_id'] for r in real_rooms])
+    print [i for i in real_rooms if 'northpole' in i['decrypted_name']]
+
+
+def parse_info(line):
+    """分析一行数据，获取name、sector_id、checksum"""
+    re_match = re.match(r'^([a-z-]+)(\d+)\[(\w+)\]$', line)
+    name, sector_id, checksum = re_match.groups()
+    sector_id = int(sector_id)
+
+    return name, sector_id, checksum
 
 
 def is_real_room(name, checksum):
@@ -27,6 +40,8 @@ def is_real_room(name, checksum):
     大于该次数的字符
     """
     counter = collections.Counter(name)
+
+    counter.pop('-')
 
     # 取checksum的最小出现次数
     checksum_min_times = min(map(counter.__getitem__, checksum))
@@ -39,6 +54,20 @@ def is_real_room(name, checksum):
     left_max_times = most_common[0][1] if most_common else -1
 
     return left_max_times <= checksum_min_times
+
+
+def decrypt_name(name, sector_id):
+    """使用sector_id对name解密"""
+    name = name.replace('-', ' ')
+
+    # 创建转换表
+    alphabet = string.ascii_lowercase
+    nr_shift = sector_id % len(alphabet)
+    trans = string.maketrans(alphabet, alphabet[nr_shift:]+alphabet[:nr_shift])
+
+    decrypted_name = string.translate(name, trans)
+
+    return decrypted_name
 
 
 if __name__ == '__main__':
