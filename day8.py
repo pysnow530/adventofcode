@@ -28,6 +28,7 @@ def main():
             screen.rotate_column(index, shifts)
 
     print screen.count_lit()
+    screen.display()
 
 
 def parse_cmd(cmd):
@@ -77,6 +78,11 @@ class Screen(object):
     def count_lit(self):
         """统计点亮个数"""
         return len(self.data[self.data == '#'])
+
+    def display(self):
+        step = 5
+        for col in range(0, self.width, step):
+            print self.data[:,col:col+step]
 
     def __str__(self):
         return str(self.data)
