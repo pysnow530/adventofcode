@@ -7,29 +7,23 @@ def main():
     """入口"""
     s = open('day9.txt').read().strip()
 
-    s_decompressed = decompress(s)
-    print len(s_decompressed)
+    print count_depressed_length(s)
 
 
-def decompress(s):
-    """对s解压"""
-    s_decompressed = ''
+def count_depressed_length(s):
+    """统计解密后的文本长度"""
+    if s == '':
+        return 0
 
-    while s:
-        parse_result = try_parse_marker(s)
+    parse_result = try_parse_marker(s)
 
-        if parse_result is not None:
-            marker_length, repeat_length, repeat_times = parse_result
+    if parse_result is not None:
+        marker_length, repeat_length, repeat_times = parse_result
+        return (repeat_length*repeat_times +
+                count_depressed_length(s[marker_length+repeat_length:]))
 
-            s = s[marker_length:]
-            s_decompressed += s[:repeat_length] * repeat_times
-            s = s[repeat_length:]
-
-        else:
-            s_decompressed += s[0]
-            s = s[1:]
-
-    return s_decompressed
+    else:
+        return 1 + count_depressed_length(s[1:])
 
 
 def try_parse_marker(s):
