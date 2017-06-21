@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import re
+import sys
 
 
 def main():
@@ -24,17 +25,22 @@ def main():
     # 初始化转移字典
     give_dict = {}
     for direction in direction_list:
-        give_tuple = parse_give(direction)
-        if give_tuple is None:
+        give_info = parse_give(direction)
+        if give_info is None:
             continue
 
-        bot, low_to_bot, high_to_bot = give_tuple
-        give_dict[bot] = {'low_to_bot': low_to_bot, 'high_to_bot': high_to_bot}
+        bot = give_info['bot']
+        give_dict[bot] = give_info
 
+    output_dict = {}
     while True:
         # 查找同时具有low和high值的bot
-        two_microchips_bot = [bot for bot, value_list in bot_dict.items()
-                              if len(value_list) == 2][0]
+        try:
+            two_microchips_bot = [bot for bot, value_list in bot_dict.items()
+                                  if len(value_list) == 2][0]
+        except Exception:       # 已不存在同时具有low和hight值的bot
+            print output_dict[0][0] * output_dict[1][0] * output_dict[2][0]
+            sys.exit()
 
         value_list = bot_dict[two_microchips_bot]
         low_value, high_value = min(value_list), max(value_list)
@@ -42,20 +48,27 @@ def main():
         # part 1求解
         if low_value == 17 and high_value == 61:
             print two_microchips_bot
-            break
-
-        low_to_bot = give_dict[two_microchips_bot]['low_to_bot']
-        high_to_bot = give_dict[two_microchips_bot]['high_to_bot']
 
         # 执行转移
-        if low_to_bot is not None:
-            if low_to_bot not in bot_dict:
-                bot_dict[low_to_bot] = []
-            bot_dict[low_to_bot].append(low_value)
-        if high_to_bot is not None:
-            if high_to_bot not in bot_dict:
-                bot_dict[high_to_bot] = []
-            bot_dict[high_to_bot].append(high_value)
+        low_to = give_dict[two_microchips_bot]['low_to']['number']
+        if give_dict[two_microchips_bot]['low_to']['type'] == 'bot':
+            if low_to not in bot_dict:
+                bot_dict[low_to] = []
+            bot_dict[low_to].append(low_value)
+        elif give_dict[two_microchips_bot]['low_to']['type'] == 'output':
+            if low_to not in output_dict:
+                output_dict[low_to] = []
+            output_dict[low_to].append(low_value)
+
+        high_to = give_dict[two_microchips_bot]['high_to']['number']
+        if give_dict[two_microchips_bot]['high_to']['type'] == 'bot':
+            if high_to not in bot_dict:
+                bot_dict[high_to] = []
+            bot_dict[high_to].append(high_value)
+        elif give_dict[two_microchips_bot]['high_to']['type'] == 'output':
+            if high_to not in output_dict:
+                output_dict[high_to] = []
+            output_dict[high_to].append(high_value)
 
         bot_dict[two_microchips_bot] = []
 
@@ -88,14 +101,17 @@ def parse_give(direction):
         bot, low_type, low_bot, high_type, high_bot = re_matched.groups()
         bot, low_bot, high_bot = int(bot), int(low_bot), int(high_bot)
 
-        if low_type == 'bot' and high_type == 'bot':
-            return (bot, low_bot, high_bot)
-        elif low_bot == 'bot' and high_type == 'output':
-            return (bot, low_bot, None)
-        elif low_type == 'output' and high_type == 'bot':
-            return (bot, None, high_bot)
-        elif low_type == 'output' and high_type == 'output':
-            return (bot, None, None)
+        return {
+            'bot': bot,
+            'low_to': {
+                'type': low_type,
+                'number': low_bot,
+            },
+            'high_to': {
+                'type': high_type,
+                'number': high_bot,
+            }
+        }
 
     else:
         return None
