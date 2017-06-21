@@ -5,8 +5,9 @@ import re
 
 def main():
     """入口"""
-    direction_list = open('day10.txt').readlines()
-    direction_list = map(str.strip, direction_list)
+    with open('day10.txt') as f:
+        direction_list = f.readlines()
+        direction_list = map(str.strip, direction_list)
 
     # 初始化bot {0: [5], 1: [1, 2], 2: [3], 3: []}
     bot_dict = {}

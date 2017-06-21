@@ -12,7 +12,10 @@ def main():
     """入口"""
     screen = Screen(50, 6)
 
-    for cmd in open('day8.txt'):
+    with open('day8.txt') as f:
+        cmds = f.readlines()
+
+    for cmd in cmds:
         action, params = parse_cmd(cmd)
 
         if action == 'rect':

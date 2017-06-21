@@ -4,7 +4,8 @@
 
 def main():
     """入口"""
-    ipv7_list = open('day7.txt').readlines()
+    with open('day7.txt') as f:
+        ipv7_list = f.readlines()
 
     tls_supported_ipv7_list = filter(tls_supported, ipv7_list)
     print len(tls_supported_ipv7_list)

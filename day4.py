@@ -9,7 +9,10 @@ def main():
     """入口"""
     real_rooms = []
 
-    for line in open('day4.txt'):
+    with open('day4.txt') as f:
+        lines = f.readlines()
+
+    for line in lines:
         line = line.strip()
         name, sector_id, checksum = parse_info(line)
 

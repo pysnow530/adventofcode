@@ -8,7 +8,8 @@ RE_MARKER = re.compile(r'^(\((\d+)x(\d+)\))')
 
 def main():
     """入口"""
-    s = open('day9.txt').read().strip()
+    with open('day9.txt') as f:
+        s = f.read().strip()
 
     print count_depressed_length(s)
     print count_depressed_length2(s)

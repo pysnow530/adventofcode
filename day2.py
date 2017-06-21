@@ -26,7 +26,8 @@ def main():
     """入口"""
     current_position = np.array((0, 0))
 
-    instructions = open('day2.txt').readlines()
+    with open('day2.txt') as f:
+        instructions = f.readlines()
 
     for instruction in instructions:
         instruction = instruction.strip()

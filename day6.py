@@ -8,9 +8,11 @@ import pandas as pd
 
 def main():
     """入口"""
+    with open('day6.txt') as f:
+        lines = f.readlines()
+        lines = map(string.strip, lines)
+
     # 获取字符矩阵
-    lines = open('day6.txt').readlines()
-    lines = map(string.strip, lines)
     char_matrix = map(list, lines)
 
     # 转置
