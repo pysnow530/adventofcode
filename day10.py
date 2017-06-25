@@ -1,120 +1,144 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import re
-import sys
 
 
 def main():
     """入口"""
-    with open('day10.txt') as f:
-        direction_list = f.readlines()
-        direction_list = map(str.strip, direction_list)
+    bot_dict, output_dict = parse_from_file('day10.txt')
 
-    # 初始化bot {0: [5], 1: [1, 2], 2: [3], 3: []}
-    bot_dict = {}
-    for direction in direction_list:
-        goes_tuple = parse_goes(direction)
-        if goes_tuple is None:
-            continue
+    while filter(Bot.has_two_chips, bot_dict.values()):
+        for bot_no, bot in bot_dict.items():
+            if bot.has_two_chips():
+                # part1 答案
+                if bot.chip_values == [17, 61]:
+                    print bot_no
 
-        value, bot = goes_tuple
-        if bot not in bot_dict:
-            bot_dict[bot] = []
-        bot_dict[bot].append(value)
+                bot.dispatch(bot_dict, output_dict)
 
-    # 初始化转移字典
-    give_dict = {}
-    for direction in direction_list:
-        give_info = parse_give(direction)
-        if give_info is None:
-            continue
-
-        bot = give_info['bot']
-        give_dict[bot] = give_info
-
-    output_dict = {}
-    while True:
-        # 查找同时具有low和high值的bot
-        try:
-            two_microchips_bot = [bot for bot, value_list in bot_dict.items()
-                                  if len(value_list) == 2][0]
-        except Exception:       # 已不存在同时具有low和hight值的bot
-            print output_dict[0][0] * output_dict[1][0] * output_dict[2][0]
-            sys.exit()
-
-        value_list = bot_dict[two_microchips_bot]
-        low_value, high_value = min(value_list), max(value_list)
-
-        # part 1求解
-        if low_value == 17 and high_value == 61:
-            print two_microchips_bot
-
-        # 执行转移
-        low_to = give_dict[two_microchips_bot]['low_to']['number']
-        if give_dict[two_microchips_bot]['low_to']['type'] == 'bot':
-            if low_to not in bot_dict:
-                bot_dict[low_to] = []
-            bot_dict[low_to].append(low_value)
-        elif give_dict[two_microchips_bot]['low_to']['type'] == 'output':
-            if low_to not in output_dict:
-                output_dict[low_to] = []
-            output_dict[low_to].append(low_value)
-
-        high_to = give_dict[two_microchips_bot]['high_to']['number']
-        if give_dict[two_microchips_bot]['high_to']['type'] == 'bot':
-            if high_to not in bot_dict:
-                bot_dict[high_to] = []
-            bot_dict[high_to].append(high_value)
-        elif give_dict[two_microchips_bot]['high_to']['type'] == 'output':
-            if high_to not in output_dict:
-                output_dict[high_to] = []
-            output_dict[high_to].append(high_value)
-
-        bot_dict[two_microchips_bot] = []
+    # part2 答案
+    multiplier_list = []
+    multiplier_list.extend(output_dict[0].chip_values)
+    multiplier_list.extend(output_dict[1].chip_values)
+    multiplier_list.extend(output_dict[2].chip_values)
+    print reduce(int.__mul__, multiplier_list, 1)
 
 
-def parse_goes(direction):
-    """解析赋值指令，返回描述指令的元组
-    value 5 goes to bot 2   =>  (5, 2)
-    """
+def parse_from_file(fpath):
+    """从文件中解析数据，返回 (bot字典, 转移字典) 元组"""
     re_goes = r'value (\d+) goes to bot (\d+)'
-
-    re_matched = re.match(re_goes, direction)
-    if re_matched:
-        value, bot = re_matched.groups()
-        value, bot = int(value), int(bot)
-        return (value, bot)
-    else:
-        return None
-
-
-def parse_give(direction):
-    """解析分发指令，返回描述指令的元组（过滤输出到output的值）
-    bot 1 gives low to output 1 and high to bot 0 => (1, 0)
-    """
     re_give = (r'bot (\d+) gives low to (bot|output) (\d+) and '
                r'high to (bot|output) (\d+)')
 
-    re_matched = re.match(re_give, direction)
+    with open('day10.txt') as f:
+        instructions = f.readlines()
+        instructions = map(str.strip, instructions)
 
-    if re_matched:
-        bot, low_type, low_bot, high_type, high_bot = re_matched.groups()
-        bot, low_bot, high_bot = int(bot), int(low_bot), int(high_bot)
+    bot_dict = FactoryDict(Bot)
+    output_dict = FactoryDict(Output)
 
-        return {
-            'bot': bot,
-            'low_to': {
-                'type': low_type,
-                'number': low_bot,
-            },
-            'high_to': {
-                'type': high_type,
-                'number': high_bot,
-            }
-        }
+    # 初始化bot_dict
+    for instruction in instructions:
 
-    else:
-        return None
+        # 初始化芯片值
+        give_matched = re.match(re_give, instruction)
+        if give_matched:
+            bot_no, low_type, low_receiver_no, high_type, high_receiver_no = \
+                give_matched.groups()
+            bot_no, low_receiver_no, high_receiver_no = \
+                int(bot_no), int(low_receiver_no), int(high_receiver_no)
+
+            bot = bot_dict[bot_no]
+            bot.low_receiver_type = low_type
+            bot.low_receiver_no = low_receiver_no
+            bot.high_receiver_type = high_type
+            bot.high_receiver_no = high_receiver_no
+
+        # 初始化芯片转移信息
+        goes_matched = re.match(re_goes, instruction)
+        if goes_matched:
+            value, bot_no = goes_matched.groups()
+            value, bot_no = int(value), int(bot_no)
+
+            bot_dict[bot_no].push_chip(value)
+
+    return bot_dict, output_dict
+
+
+class FactoryDict(dict):
+    """创建一个字典
+    当访问字典里的键不存在时，使用默认类创建一个对象并返回"""
+
+    default_class = None
+
+    def __init__(self, default_class):
+        super(self.__class__, self).__init__()
+        self.default_class = default_class
+
+    def __getitem__(self, key):
+        """返回字典值，如果不存在，生成默认对象并返回"""
+        if key not in self:
+            self[key] = self.default_class()
+
+        return super(self.__class__, self).__getitem__(key)
+
+
+class Bot(object):
+    """Bot对象，包含芯片和转移信息"""
+
+    chip_values = None
+
+    low_receiver_type = None
+    low_receiver_no = None
+
+    high_receiver_type = None
+    high_receiver_no = None
+
+    def __init__(self):
+        self.chip_values = []
+
+    def push_chip(self, chip_value):
+        """将某个值压入Bot，压入后，Bot将自动对比存放两个值"""
+        self.chip_values.append(chip_value)
+        self.chip_values.sort()
+
+    def has_two_chips(self):
+        """是否有两块芯片"""
+        return len(self.chip_values) == 2
+
+    def dispatch(self, bot_dict, output_dict):
+        """转发两个值到其它 Bot 或 Output"""
+        lower_value, higher_value = self.chip_values
+
+        # 给出低值芯片
+        if self.low_receiver_type == 'bot':
+            low_receiver = bot_dict[self.low_receiver_no]
+        elif self.low_receiver_type == 'output':
+            low_receiver = output_dict[self.low_receiver_no]
+        low_receiver.push_chip(lower_value)
+
+        # 给出高值芯片
+        if self.high_receiver_type == 'bot':
+            high_receiver = bot_dict[self.high_receiver_no]
+        elif self.high_receiver_type == 'output':
+            high_receiver = output_dict[self.high_receiver_no]
+        high_receiver.push_chip(higher_value)
+
+        # 清空自己的芯片
+        self.chip_values = []
+
+
+class Output(object):
+    """输出对象，可接收芯片"""
+
+    chip_values = None
+
+    def __init__(self):
+        self.chip_values = []
+
+    def push_chip(self, chip_value):
+        """将某个值压入Bot，压入后，Bot将自动对比存放两个值"""
+        self.chip_values.append(chip_value)
 
 
 if __name__ == '__main__':
