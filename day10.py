@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import collections
 import re
 
 
@@ -34,8 +35,8 @@ def parse_from_file(fpath):
         instructions = f.readlines()
         instructions = map(str.strip, instructions)
 
-    bot_dict = FactoryDict(Bot)
-    output_dict = FactoryDict(Output)
+    bot_dict = collections.defaultdict(Bot)
+    output_dict = collections.defaultdict(Output)
 
     # 初始化bot_dict
     for instruction in instructions:
@@ -63,24 +64,6 @@ def parse_from_file(fpath):
             bot_dict[bot_no].push_chip(value)
 
     return bot_dict, output_dict
-
-
-class FactoryDict(dict):
-    """创建一个字典
-    当访问字典里的键不存在时，使用默认类创建一个对象并返回"""
-
-    default_class = None
-
-    def __init__(self, default_class):
-        super(self.__class__, self).__init__()
-        self.default_class = default_class
-
-    def __getitem__(self, key):
-        """返回字典值，如果不存在，生成默认对象并返回"""
-        if key not in self:
-            self[key] = self.default_class()
-
-        return super(self.__class__, self).__getitem__(key)
 
 
 class Bot(object):
